@@ -33,14 +33,22 @@ config = load_config()
 # Tentativo di importare le librerie reali
 try:
     import ltr559
-    from pimoroni_grow import GrowHatMini
+    from grow.moisture import Moisture
 
-    class RealGrowHatMini(GrowHatMini):
+    class RealSensors:
         def __init__(self):
-            super().__init__()
+            self.moisture = [
+                Moisture(channel=1),
+                Moisture(channel=2),
+                Moisture(channel=3),
+            ]
             self.light = ltr559.LTR559()
 
-except ImportError:
+    sensors = RealSensors()
+
+except ImportError as e:
+    print(f"Error importing libraries: {e}")
+
     # Definizione delle classi Mock se le librerie non sono disponibili
     class MockMoistureSensor:
         def read(self):
@@ -50,15 +58,12 @@ except ImportError:
         def get_lux(self):
             return random.uniform(100, 1000)  # Valore in lux
 
-    class MockGrowHatMini:
+    class MockSensors:
         def __init__(self):
             self.moisture = [MockMoistureSensor() for _ in range(3)]
             self.light = MockLightSensor()
 
-    RealGrowHatMini = MockGrowHatMini  # Alias per utilizzare la classe mock
-
-# Creazione dell'istanza GrowHatMini (reale o mock)
-grow = RealGrowHatMini()
+    sensors = MockSensors()  # Alias per utilizzare la classe mock
 
 # Creazione dell'app Flask
 app = Flask(__name__)
@@ -75,24 +80,16 @@ def sensor_data():
     """Endpoint che restituisce i valori dei sensori in formato JSON."""
     # Lettura dei sensori di umidità
     try:
-        s1 = grow.moisture[0].read()
+        s1 = sensors.moisture[0].moisture
+        s2 = sensors.moisture[1].moisture
+        s3 = sensors.moisture[2].moisture
     except Exception as e:
-        print(f"Error reading sensor1: {e}")
-        s1 = None
-    try:
-        s2 = grow.moisture[1].read()
-    except Exception as e:
-        print(f"Error reading sensor2: {e}")
-        s2 = None
-    try:
-        s3 = grow.moisture[2].read()
-    except Exception as e:
-        print(f"Error reading sensor3: {e}")
-        s3 = None
+        print(f"Error reading sensors: {e}")
+        s1, s2, s3 = None, None, None
 
     # Lettura del sensore di luce
     try:
-        light = grow.light.get_lux()
+        light = sensors.light.get_lux() if sensors.light else None
     except AttributeError:
         # Se il metodo non esiste (nel caso del mock), genera un valore casuale
         light = random.uniform(100, 1000)
