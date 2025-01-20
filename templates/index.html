@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Grow Hat Mini - Monitor Web</title>
+  <!-- Includi il file CSS personalizzato -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <!-- Includi Chart.js tramite CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Overlay per migliorare la leggibilità -->
+  <div class="overlay"></div>
+  
+  <div class="container">
+    <h1>Monitoraggio Sensori - Grow Hat Mini</h1>
+
+    <!-- Valori dei Sensori -->
+    <div class="sensor">Sensore 1: <span id="sensor1">--</span></div>
+    <div class="sensor">Sensore 2: <span id="sensor2">--</span></div>
+    <div class="sensor">Sensore 3: <span id="sensor3">--</span></div>
+    <div class="sensor">Sensore di Luce: <span id="light">--</span> lux</div>
+
+    <!-- Avvisi -->
+    <div id="alert"></div>
+
+    <!-- Wrapper per i Grafici -->
+    <div class="charts-wrapper">
+      <!-- Grafico dei Sensori di Umidità -->
+      <div class="chart-container">
+        <canvas id="sensorChart"></canvas>
+      </div>
+
+      <!-- Grafico del Sensore di Luce -->
+      <div class="chart-container">
+        <canvas id="lightChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Form per impostare wet_point e dry_point -->
+    <div class="settings">
+      <h2>Impostazioni Soglie Umidità</h2>
+      <form id="settingsForm">
+        <label for="wet_point">Wet Point (%):</label>
+        <input type="number" id="wet_point" name="wet_point" step="0.1" min="0" max="100" required>
+        
+        <label for="dry_point">Dry Point (%):</label>
+        <input type="number" id="dry_point" name="dry_point" step="0.1" min="0" max="100" required>
+        
+        <button type="submit">Aggiorna Soglie</button>
+      </form>
+      <div id="settingsStatus"></div>
+    </div>
+  </div>
+
+  <script>
+    // Configurazione del grafico per i Sensori di Umidità utilizzando Chart.js
+    const ctxSensor = document.getElementById('sensorChart').getContext('2d');
+    const sensorChart = new Chart(ctxSensor, {
+      type: 'line',
+      data: {
+        labels: [], // Etichette temporali
+        datasets: [
+          {
+            label: 'Sensore 1',
+            data: [],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Sensore 2',
+            data: [],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Sensore 3',
+            data: [],
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#fff' // Colore della legenda
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: '#fff' // Colore delle etichette dell'asse x
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#fff' // Colore delle etichette dell'asse y
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)'
+            }
+          }
+        }
+      }
+    });
+
+    // Configurazione del grafico per il Sensore di Luce utilizzando Chart.js
+    const ctxLight = document.getElementById('lightChart').getContext('2d');
+    const lightChart = new Chart(ctxLight, {
+      type: 'line',
+      data: {
+        labels: [], // Etichette temporali
+        datasets: [
+          {
+            label: 'Luce (lux)',
+            data: [],
+            borderColor: 'rgba(255, 206, 86, 1)',
+            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#fff' // Colore della legenda
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: '#fff' // Colore delle etichette dell'asse x
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#fff' // Colore delle etichette dell'asse y
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)'
+            }
+          }
+        }
+      }
+    });
+
+    // Funzione per aggiornare il grafico dei Sensori di Umidità
+    function updateSensorChart(time, s1, s2, s3) {
+      // Limita il numero di punti nel grafico (es. ultimi 20)
+      const maxPoints = 20;
+
+      sensorChart.data.labels.push(time);
+      sensorChart.data.datasets[0].data.push(s1);
+      sensorChart.data.datasets[1].data.push(s2);
+      sensorChart.data.datasets[2].data.push(s3);
+
+      if (sensorChart.data.labels.length > maxPoints) {
+        sensorChart.data.labels.shift();
+        sensorChart.data.datasets.forEach(dataset => dataset.data.shift());
+      }
+
+      sensorChart.update();
+    }
+
+    // Funzione per aggiornare il grafico del Sensore di Luce
+    function updateLightChart(time, light) {
+      // Limita il numero di punti nel grafico (es. ultimi 20)
+      const maxPoints = 20;
+
+      lightChart.data.labels.push(time);
+      lightChart.data.datasets[0].data.push(light);
+
+      if (lightChart.data.labels.length > maxPoints) {
+        lightChart.data.labels.shift();
+        lightChart.data.datasets[0].data.shift();
+      }
+
+      lightChart.update();
+    }
+
+    // Funzione per ottenere l'ora corrente formattata
+    function getCurrentTime() {
+      const now = new Date();
+      return now.toLocaleTimeString();
+    }
+
+    // Variabili per le soglie
+    let wet_point = 70.0;
+    let dry_point = 30.0;
+
+    // Funzione per recuperare la configurazione attuale
+    function loadSettings() {
+      fetch('/settings')
+        .then(response => response.json())
+        .then(data => {
+          wet_point = data.wet_point;
+          dry_point = data.dry_point;
+          // Popola i campi del form con i valori attuali
+          document.getElementById('wet_point').value = wet_point;
+          document.getElementById('dry_point').value = dry_point;
+        })
+        .catch(err => {
+          console.error('Errore nel recupero delle impostazioni:', err);
+        });
+    }
+
+    // Chiamata iniziale per caricare le impostazioni
+    loadSettings();
+
+    // Funzione per recuperare i dati dei sensori
+    function fetchSensorData() {
+        fetch('/sensor_data')
+            .then(response => response.json())
+            .then(data => {
+                // Gestione dei valori null o mancanti
+                const s1 = data.sensor1 !== null ? data.sensor1.toFixed(2) : "DISCONNESSO";
+                const s2 = data.sensor2 !== null ? data.sensor2.toFixed(2) : "DISCONNESSO";
+                const s3 = data.sensor3 !== null ? data.sensor3.toFixed(2) : "DISCONNESSO";
+                const light = data.light !== null ? data.light.toFixed(2) : "DISCONNESSO";
+    
+                // Aggiorna i valori nella pagina
+                document.getElementById('sensor1').textContent = s1;
+                document.getElementById('sensor2').textContent = s2;
+                document.getElementById('sensor3').textContent = s3;
+                document.getElementById('light').textContent = light;
+    
+                // Gestione degli avvisi per sensori disconnessi
+                const alertDiv = document.getElementById('alert');
+                let warnings = [];
+                if (data.sensor1 === null) warnings.push("Sensore 1 disconnesso!");
+                if (data.sensor2 === null) warnings.push("Sensore 2 disconnesso!");
+                if (data.sensor3 === null) warnings.push("Sensore 3 disconnesso!");
+                if (data.light === null) warnings.push("Sensore di luce disconnesso!");
+    
+                // Aggiungi altri avvisi relativi alle soglie
+                if (data.sensor1 !== null && data.sensor1 < dry_point) warnings.push("Sensore 1: umidità bassa!");
+                if (data.sensor1 !== null && data.sensor1 > wet_point) warnings.push("Sensore 1: umidità alta!");
+                if (data.sensor2 !== null && data.sensor2 < dry_point) warnings.push("Sensore 2: umidità bassa!");
+                if (data.sensor2 !== null && data.sensor2 > wet_point) warnings.push("Sensore 2: umidità alta!");
+                if (data.sensor3 !== null && data.sensor3 < dry_point) warnings.push("Sensore 3: umidità bassa!");
+                if (data.sensor3 !== null && data.sensor3 > wet_point) warnings.push("Sensore 3: umidità alta!");
+    
+                // Mostra gli avvisi
+                if (warnings.length > 0) {
+                    alertDiv.textContent = warnings.join(' | ');
+                } else {
+                    alertDiv.textContent = '';
+                }
+    
+                // Aggiorna i grafici solo per i sensori con valori validi
+                const currentTime = getCurrentTime();
+                if (data.sensor1 !== null && data.sensor2 !== null && data.sensor3 !== null) {
+                    updateSensorChart(currentTime, data.sensor1, data.sensor2, data.sensor3);
+                }
+                if (data.light !== null) {
+                    updateLightChart(currentTime, data.light);
+                }
+            })
+            .catch(err => {
+                console.error('Errore nel recupero dati sensori:', err);
+                document.getElementById('alert').textContent = 'Errore nel recupero dati. Controlla la connessione.';
+            });
+    }
+    
+    // Esegui la prima chiamata all'apertura della pagina
+    fetchSensorData();
+    // Esegui la chiamata ogni 2 secondi (2000 ms)
+    setInterval(fetchSensorData, 2000);
+
+    // Gestione del form delle impostazioni
+    document.getElementById('settingsForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Previene il comportamento predefinito del form
+
+      // Ottiene i valori inseriti
+      const newWet = parseFloat(document.getElementById('wet_point').value);
+      const newDry = parseFloat(document.getElementById('dry_point').value);
+
+      // Validazione semplice
+      if (isNaN(newWet) || isNaN(newDry) || newWet < 0 || newWet > 100 || newDry < 0 || newDry > 100) {
+        alert('Inserisci valori validi per le soglie (0-100).');
+        return;
+      }
+
+      // Invia i nuovi valori al server
+      fetch('/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          wet_point: newWet,
+          dry_point: newDry
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Aggiorna le variabili locali
+          wet_point = data.config.wet_point;
+          dry_point = data.config.dry_point;
+
+          // Mostra un messaggio di successo
+          const statusDiv = document.getElementById('settingsStatus');
+          statusDiv.textContent = 'Soglie aggiornate con successo!';
+          setTimeout(() => { statusDiv.textContent = ''; }, 3000);
+        } else {
+          throw new Error('Errore nell\'aggiornamento delle soglie.');
+        }
+      })
+      .catch(err => {
+        console.error('Errore nell\'invio delle impostazioni:', err);
+      });
+    });
+  </script>
+</body>
+</html>

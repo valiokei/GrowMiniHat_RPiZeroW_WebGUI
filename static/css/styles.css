@@ -1,0 +1,127 @@
+/* styles.css */
+
+/* Imposta l'immagine di sfondo per l'intera pagina */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url('../images/background.jpg'); /* Percorso relativo all'immagine */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: #fff; /* Testo bianco per contrastare lo sfondo */
+}
+
+/* Aggiungi un overlay scuro per migliorare la leggibilità */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* Nero semi-trasparente */
+    z-index: -1; /* Posiziona dietro il contenuto */
+}
+
+/* Contenitore principale per centrare il contenuto */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.6); /* Leggero sfondo nero trasparente */
+    border-radius: 10px;
+}
+
+/* Stili per le etichette dei sensori */
+.sensor {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+/* Stile per i sensori disconnessi */
+.sensor-disconnected {
+    color: #ff4c4c; /* Rosso brillante */
+    font-weight: bold;
+}
+
+/* Stili per gli avvisi */
+#alert {
+    color: #ff4c4c; /* Rosso brillante */
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+/* Wrapper per i grafici */
+.charts-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+/* Stili per i grafici */
+.chart-container {
+    flex: 1 1 45%; /* Occupa il 45% dello spazio disponibile */
+    min-width: 300px; /* Larghezza minima per i grafici */
+    background: rgba(255, 255, 255, 0.1); /* Leggero sfondo bianco trasparente */
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* Stili per le impostazioni sotto ai grafici */
+.settings {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.settings h2 {
+    margin-bottom: 15px;
+}
+
+.settings label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.settings input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: none;
+    border-radius: 5px;
+}
+
+.settings button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.settings button:hover {
+    background-color: #45a049;
+}
+
+#settingsStatus {
+    margin-top: 10px;
+    font-style: italic;
+    color: #4CAF50;
+}
+
+/* Responsive Design: Adatta i grafici per dispositivi mobili */
+@media (max-width: 768px) {
+    .charts-wrapper {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .chart-container {
+        flex: 1 1 100%;
+        max-width: 500px;
+    }
+}
