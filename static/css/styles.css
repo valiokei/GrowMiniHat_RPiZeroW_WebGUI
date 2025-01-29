@@ -125,3 +125,22 @@ body {
         max-width: 500px;
     }
 }
+
+.heart-button {
+    display: inline-block;
+    text-decoration: none;
+    transition: transform 0.2s ease-in-out;
+}
+
+.heart-button svg {
+    display: block;
+    margin: 0 auto;
+    fill: red; /* Colore del cuore */
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Effetto al passaggio del mouse */
+.heart-button:hover svg {
+    transform: scale(1.2); /* Ingrandimento leggero */
+    fill: #ff4d4d; /* Colore più brillante */
+}

@@ -1,15 +1,31 @@
 import json
+import mimetypes
 import os
 import random
 import threading
 
+import pillow_heif
 from flask import Flask, jsonify, render_template, request
+from PIL import Image
 
 # Definizione del percorso per il file di configurazione
 CONFIG_FILE = "config.json"
 
+# Directory delle immagini
+IMAGE_FOLDER = "static/images/carousel"
+
 # Valori di default per wet_point e dry_point
 default_config = {"wet_point": 70.0, "dry_point": 30.0}
+
+
+def convert_heic_to_jpeg(heic_file):
+    heif_file = pillow_heif.open_heif(heic_file)
+    image = Image.frombytes(
+        heif_file.mode, heif_file.size, heif_file.data, "raw", heif_file.mode
+    )
+    jpeg_path = heic_file.replace(".heic", ".jpg")
+    image.save(jpeg_path, "JPEG")
+    return jpeg_path
 
 
 # Funzione per caricare la configurazione
@@ -73,6 +89,31 @@ app = Flask(__name__)
 def index():
     """Ritorna la pagina HTML principale."""
     return render_template("index.html")
+
+
+@app.route("/carousel")
+def carousel():
+    # Converte eventuali file HEIC in JPEG
+    for f in os.listdir(IMAGE_FOLDER):
+        if f.lower().endswith(".heic"):
+            heic_path = os.path.join(IMAGE_FOLDER, f)
+            convert_heic_to_jpeg(heic_path)
+
+    # Lista dei file nella cartella immagini
+    valid_extensions = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4")
+    image_files = [
+        os.path.join(IMAGE_FOLDER, f)
+        for f in os.listdir(IMAGE_FOLDER)
+        if f.lower().endswith(valid_extensions)
+    ]
+
+    # Identifica il tipo MIME dei file
+    media_files = [
+        {"path": file, "type": mimetypes.guess_type(file)[0] or ""}
+        for file in image_files
+    ]
+
+    return render_template("carousel.html", media_files=media_files)
 
 
 @app.route("/sensor_data")
